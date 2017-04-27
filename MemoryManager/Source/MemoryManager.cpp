@@ -1,7 +1,5 @@
 #include "MemoryManager.h"
 
-#include <iostream>
-
 namespace MemoryManager
 {
   // IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT 
@@ -11,7 +9,7 @@ namespace MemoryManager
   //
   // IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT
 
-  // Change these to try different block sizes
+  // Constants for block size operations
   #define BLOCK_SIZE       2        // Number of bytes in a block
   #define BLOCK_ADDR_MASK  0x7FFF   // Mask for extracting an address from a block
   #define BLOCK_LOWER_MASK 0x00FF   // Mask for extracting the lower byte from a block
@@ -56,6 +54,34 @@ namespace MemoryManager
     return (firstByte << 8) | secondByte;
   }
 
+  // Get the previous tail block address, returning whether or not the operation was successful
+  bool getPreviousTailBlockAddress(int headBlockAddress, int& previousTailBlockAddress)
+  {
+    // Ensure that the head block address is valid
+    if (headBlockAddress <= 1 + MIN_CHUNK_SIZE 
+        || headBlockAddress >= MM_POOL_SIZE / BLOCK_SIZE - 1 - MIN_CHUNK_SIZE)
+    {
+      return false;
+    }
+
+    previousTailBlockAddress = headBlockAddress - 1;
+    return true;
+  }
+
+  // Get the next head block address, returning whether or not the operation was successful
+  bool getNextHeadBlockAddress(int tailBlockAddress, int& nextHeadBlockAddress)
+  {
+    // Ensure that the tail block address is within bounds that leave room for a chunk
+    if (tailBlockAddress <= MIN_CHUNK_SIZE 
+        || tailBlockAddress >= MM_POOL_SIZE / BLOCK_SIZE - 1 - MIN_CHUNK_SIZE)
+    {
+      return false;
+    }
+
+    nextHeadBlockAddress = tailBlockAddress + 1;
+    return true;
+  }
+
   // Check if the chunk belonging to the given metablock is used
   bool isChunkUsed(int blockAddress)
   {
@@ -84,14 +110,31 @@ namespace MemoryManager
   {
     int tailBlockAddress = headBlockAddress + numBlocks + 1;
     setBlock(headBlockAddress, (used ? BLOCK_USED_MASK : 0) | tailBlockAddress);
-    setBlock(tailBlockAddress, headBlockAddress);
+    setBlock(tailBlockAddress, (used ? BLOCK_USED_MASK : 0) | headBlockAddress);
   }
 
   // Check if the chunk whose head is given is valid (head and tail addresses
   //   within bounds, head and tail point to each other)
   bool validateChunk(int headBlockAddress)
   {
+    // Check if head block address is within bounds
+    if (headBlockAddress < 0 || headBlockAddress >= MM_POOL_SIZE / BLOCK_SIZE - 1 - MIN_CHUNK_SIZE)
+      return false;
 
+    int tailBlockAddress = getLinkedAddress(headBlockAddress);
+
+    // Check if tail block address is within bounds
+    if (tailBlockAddress < MIN_CHUNK_SIZE || tailBlockAddress >= MM_POOL_SIZE / BLOCK_SIZE)
+      return false;
+
+    // Ensure that tail block contains address of head block (otherwise it's highly unlikely
+    //   that there's a valid chunk at headBlockAddress)
+    if (getLinkedAddress(tailBlockAddress) != headBlockAddress)
+      return false;
+
+    // Ensure that the head and tail have same used/free bit (otherwise it's highly unlikely
+    //   that there's a valid chunk at headBlockAddress)
+    return (isChunkUsed(headBlockAddress) == isChunkUsed(tailBlockAddress));
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -163,7 +206,41 @@ namespace MemoryManager
   // Free up a chunk previously allocated
   void deallocate(void* aPointer)
   {
-    
+    int headBlockAddress = poolIndexToBlockAddress((char*)aPointer - MM_pool) - 1;
+
+    // Validate chunk that the pointer supposedly points to
+    if (!validateChunk(headBlockAddress))
+    {
+      onIllegalOperation("deallocate(%p) Argument is not a valid pointer!");
+    }
+
+    // Free this chunk
+    setChunkMetadata(false, headBlockAddress, getNumDataBlocksInChunk(headBlockAddress));
+
+    // Get tail block address of the current block
+    int tailBlockAddress = getLinkedAddress(headBlockAddress);
+
+    // Merge with previous chunk if free
+    int previousTailBlockAddress;
+    if (getPreviousTailBlockAddress(headBlockAddress, previousTailBlockAddress)
+        && !isChunkUsed(previousTailBlockAddress))
+    {
+      setBlock(headBlockAddress, 0);
+      headBlockAddress = getLinkedAddress(previousTailBlockAddress);
+      setBlock(previousTailBlockAddress, 0);
+      setChunkMetadata(false, headBlockAddress, tailBlockAddress - headBlockAddress - 1);
+    }
+
+    // Merge with next chunk if free
+    int nextHeadBlockAddress;
+    if (getNextHeadBlockAddress(tailBlockAddress, nextHeadBlockAddress)
+      && !isChunkUsed(nextHeadBlockAddress))
+    {
+      setBlock(tailBlockAddress, 0);
+      tailBlockAddress = getLinkedAddress(nextHeadBlockAddress);
+      setBlock(nextHeadBlockAddress, 0);
+      setChunkMetadata(false, headBlockAddress, tailBlockAddress - headBlockAddress - 1);
+    }
   }
 
   // Will scan the memory pool and return the total free space remaining
