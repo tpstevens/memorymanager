@@ -20,14 +20,14 @@ int main(void)
 
   int_pointer = (long *) allocate(sizeof(long));
   string_pointer = (char*) allocate(255);
-
+  
   *int_pointer = 0xDEADBEEF;
   strcpy(string_pointer,"It was the best of times, it was the worst of times");
-
+  
   std::cout << "Free memory = " << freeRemaining() << std::endl;
-
-  deallocate(int_pointer);
-  deallocate(string_pointer);
+  // 
+  // deallocate(int_pointer);
+  // deallocate(string_pointer);
 }
 
 namespace MemoryManager
