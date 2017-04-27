@@ -1,0 +1,55 @@
+Briefly address the following points, modify this text file and include it in
+your reply.
+-------------------------------------------------------------------------------
+
+ 
+Explain the conceptual distinctions between scripting languages, C++, C, and
+assembly and when it is appropriate and inappropriate to use each.
+---------------------------------------
+While C/C++ and assembly are generally compiled before distribution, scripting
+languages may be compiled at runtime. 
+
+Precompiled languages can be much more performant than runtime-interpreted 
+languages; because they have already been compiled down to native code, they
+have less overhead than an interpreted language.
+
+C++ and C are well-suited to writing game engines, as they provide explicit 
+control over memory optimizations. While assembly could give the same level of
+performance, it would be extremely unwieldy to design an entire engine
+architecture. Assembly should be used for shorter, highly focused operations
+where the compiler may not be able to produce the desired optimization.
+
+Though many enterprise projects rely on C (see NASA's coding guidelines), it
+doesn't provide the same native abstraction as languages like C++.
+
+Scripting languages often hook into existing engine/gameplay code to provide
+easier access to designers or artists. Many games, such as Blizzard's World of
+Warcraft, expose in-game APIs through scripting languages like Lua. Because they
+do not necessarily need to be precompiled, developers can write or modify scripts
+without forcing a recompilation. As mentioned with WoW, scripts can provide 
+players with the tools needed to mod or customize their game experience. 
+Scripting languages may not provide much utility when designing the core game
+logic, as it is easier to optimize with languages like C++/C.
+
+
+Describe the limitations of code reuse through inheritance in a large, diverse
+codebase.  Propose alternative solutions to these limitations.
+---------------------------------------
+entity-component-system
+
+Compare and contrast the biggest challenges of console game development versus
+PC game development.
+---------------------------------------
+
+
+How would you attempt to understand the design of a large code base in a short
+period of time?
+---------------------------------------
+
+
+Talk about a few Best Practices you use when programming in a team environment.
+---------------------------------------
+
+
+Discuss an instance of a bad game design decision in an otherwise good game.
+---------------------------------------
