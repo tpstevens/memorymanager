@@ -11,12 +11,16 @@ namespace MemoryManager
   //
   // IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT IMPORTANT
 
-  #define BLOCK_SIZE 2
-  #define BLOCK_ADDR_MASK  0x7FFF
-  #define BLOCK_LOWER_MASK 0x00FF
-  #define BLOCK_UPPER_MASK 0xFF00
-  #define BLOCK_USED_MASK  0x80     // bit is at front of first byte in block
-  #define MIN_CHUNK_SIZE 1          // how much data must a chunk be able to store? set to > 0
+  // Change these to try different block sizes
+  #define BLOCK_SIZE       2        // Number of bytes in a block
+  #define BLOCK_ADDR_MASK  0x7FFF   // Mask for extracting an address from a block
+  #define BLOCK_LOWER_MASK 0x00FF   // Mask for extracting the lower byte from a block
+  #define BLOCK_BYTE_SHIFT 1        // The amount to shift a block to get bytes, and vice versa
+  #define BLOCK_UPPER_MASK 0xFF00   // Mask for extracting the upper byte from a block
+  #define BLOCK_USED_MASK  0x8000   // Mask for extracting the used/free bit from a block
+  #define BYTE_ADDR_MASK   0x7F     // Mask for extracting an address from a byte
+  #define BYTE_USED_MASK   0x80     // Mask for extracting the used/free bit from a byte
+  #define MIN_CHUNK_SIZE   1        // Minimum number of usable blocks in chunk. Must be > 0
 
   const int MM_POOL_SIZE = 65536;
   char MM_pool[MM_POOL_SIZE];
@@ -28,40 +32,38 @@ namespace MemoryManager
   // Convert a 15-bit block address to the index in the MM_pool array
   int blockAddressToPoolIndex(int blockAddress)
   {
-    int result = (blockAddress & BLOCK_ADDR_MASK) << 1;
-    return result;
+    return (blockAddress & BLOCK_ADDR_MASK) << BLOCK_BYTE_SHIFT;
   }
 
   // Convert an index in the MM_pool array to a 15-bit block address
   int poolIndexToBlockAddress(int poolIndex)
   {
-    return poolIndex >> 1;
+    return (poolIndex >> BLOCK_BYTE_SHIFT) & BLOCK_ADDR_MASK;
   }
 
-  // Get the value at the given block
-  int getLinkedAddress(int blockAddress)
+  // Get the address stored in the head or tail block
+  unsigned int getLinkedAddress(int blockAddress)
   {
-    int firstByteIndex = blockAddressToPoolIndex(blockAddress);
-    int firstByte = (unsigned char)MM_pool[firstByteIndex] & 0x7F;
-    int secondByte = (unsigned char)MM_pool[firstByteIndex + 1];
+    // Get the index of the first byte of the block
+    unsigned int firstByteIndex = blockAddressToPoolIndex(blockAddress);
 
-    // Get the upper byte without the used bit
-    int upperByte = firstByte << 8;
+    // Get the first byte of the block, without the used/free bit
+    unsigned int firstByte = (unsigned char)MM_pool[firstByteIndex] & BYTE_ADDR_MASK;
 
-    // Add the lower byte
-    int result = upperByte | secondByte;
+    // Get the second byte of the block
+    unsigned int secondByte = (unsigned char)MM_pool[firstByteIndex + 1];
 
-    return result;
+    return (firstByte << 8) | secondByte;
   }
 
   // Check if the chunk belonging to the given metablock is used
   bool isChunkUsed(int blockAddress)
   {
-    return (MM_pool[blockAddressToPoolIndex(blockAddress)] & BLOCK_USED_MASK) > 0;
+    return (MM_pool[blockAddressToPoolIndex(blockAddress)] & BYTE_USED_MASK) > 0;
   }
 
   // Get the number of blocks between the given head and its corresponding tail
-  int getChunkDataSize(int headBlockAddress)
+  int getNumDataBlocksInChunk(int headBlockAddress)
   {
     int tailBlockAddress = getLinkedAddress(headBlockAddress);
     return tailBlockAddress - (headBlockAddress + 1);
@@ -81,8 +83,15 @@ namespace MemoryManager
   void setChunkMetadata(bool used, int headBlockAddress, int numBlocks)
   {
     int tailBlockAddress = headBlockAddress + numBlocks + 1;
-    setBlock(headBlockAddress, (used ? 0x8000 : 0) | tailBlockAddress);
+    setBlock(headBlockAddress, (used ? BLOCK_USED_MASK : 0) | tailBlockAddress);
     setBlock(tailBlockAddress, headBlockAddress);
+  }
+
+  // Check if the chunk whose head is given is valid (head and tail addresses
+  //   within bounds, head and tail point to each other)
+  bool validateChunk(int headBlockAddress)
+  {
+
   }
 
   //////////////////////////////////////////////////////////////////////////////
@@ -104,40 +113,46 @@ namespace MemoryManager
     int currentTailAddress = 0;
     int numBlocksRequested;
 
-    // Validate arguments
-    if (aSize <= 0)
-      onIllegalOperation("allocate(%d) aSize must be > 0", aSize);
+    // Validate argument
+    if (aSize <= 0 || aSize >= MM_POOL_SIZE)
+      onIllegalOperation("allocate(%d) aSize must be between 0 and %d", aSize, MM_POOL_SIZE);
 
     // Calculate number of blocks required
     numBlocksRequested = aSize / BLOCK_SIZE + (aSize % BLOCK_SIZE > 0 ? 1 : 0);
 
-    // Iterate through all blocks
+    // Iterate through all chunks
     while (currentHeadAddress < MM_POOL_SIZE / BLOCK_SIZE)
     {
-      // Free space must also accommodate adding head/tail
+      // Skip used chunks
       if (!isChunkUsed(currentHeadAddress))
       {
-        dataBlocksInChunk = getChunkDataSize(currentHeadAddress);
-        std::cout << "Chunk at " << currentHeadAddress << " has " << dataBlocksInChunk << " blocks free." << std::endl;
+        dataBlocksInChunk = getNumDataBlocksInChunk(currentHeadAddress);
 
+        // Check if there's enough free space to create a new free chunk as well
+        // Usable space in free chunk must be greater than MIN_CHUNK_SIZE
         if (dataBlocksInChunk >= numBlocksRequested + MIN_CHUNK_SIZE + 2)
         {
+          // Create a used chunk
           setChunkMetadata(true, currentHeadAddress, numBlocksRequested);
 
           // Make another free chunk with the remaining area
           int remainingFreeChunks = dataBlocksInChunk - (numBlocksRequested + 2);
           setChunkMetadata(false, currentHeadAddress + numBlocksRequested + 2, remainingFreeChunks);
 
+          // Pointer address = start of pool + index of current head + size of
+          //   head in bytes
           return (MM_pool + blockAddressToPoolIndex(currentHeadAddress) + BLOCK_SIZE);
         }
         else if (dataBlocksInChunk >= numBlocksRequested)
         {
-          // Convert the existing chunk to a used chunk
+          // Convert the existing free chunk to a used chunk, even though not
+          //   all space will be used
           setChunkMetadata(true, currentHeadAddress, dataBlocksInChunk);
           return (MM_pool + blockAddressToPoolIndex(currentHeadAddress) + BLOCK_SIZE);
         }
       }
 
+      // Advance to the next chunk
       currentHeadAddress = getLinkedAddress(currentHeadAddress) + 1;
     }
 
@@ -148,7 +163,7 @@ namespace MemoryManager
   // Free up a chunk previously allocated
   void deallocate(void* aPointer)
   {
-    // TODO: IMPLEMENT ME
+    
   }
 
   // Will scan the memory pool and return the total free space remaining
@@ -157,21 +172,19 @@ namespace MemoryManager
     int currentHeadAddress = 0;
     int freeBlocks = 0;
 
+    // Iterate through the list of chunks, ignoring used chunks
     while (currentHeadAddress < MM_POOL_SIZE / BLOCK_SIZE)
     {
       if (!isChunkUsed(currentHeadAddress))
       {
-        std::cout << "Chunk at " << currentHeadAddress << " has " << getChunkDataSize(currentHeadAddress) << " blocks free" << std::endl;
-        freeBlocks += getChunkDataSize(currentHeadAddress);
-      }
-      else
-      {
-        std::cout << "Chunk at " << currentHeadAddress << " has " << getChunkDataSize(currentHeadAddress) << " blocks used" << std::endl;
+        freeBlocks += getNumDataBlocksInChunk(currentHeadAddress);
       }
 
+      // Advance to the next chunk
       currentHeadAddress = getLinkedAddress(currentHeadAddress) + 1;
     }
 
+    // Convert from blocks to bytes
     return freeBlocks * BLOCK_SIZE;
   }
 
@@ -179,45 +192,52 @@ namespace MemoryManager
   int largestFree(void)
   {
     int currentHeadAddress = 0;
-    int largestFreeBlocks = 0;
+    int mostFreeBlocks = 0;
 
+    // Iterate through the list of chunks, ignoring used chunks
     while (currentHeadAddress < MM_POOL_SIZE / BLOCK_SIZE)
     {
       if (!isChunkUsed(currentHeadAddress))
       {
-        int chunkSize = getChunkDataSize(currentHeadAddress);
-        if (chunkSize > largestFreeBlocks)
+        int chunkSize = getNumDataBlocksInChunk(currentHeadAddress);
+        if (chunkSize > mostFreeBlocks)
         {
-          largestFreeBlocks = chunkSize;
+          mostFreeBlocks = chunkSize;
         }
       }
 
+      // Advance to the next chunk
       currentHeadAddress = getLinkedAddress(currentHeadAddress) + 1;
     }
 
-    return largestFreeBlocks * BLOCK_SIZE;
+    // Convert from blocks to bytes
+    return mostFreeBlocks * BLOCK_SIZE;
   }
 
   // Will scan the memory pool and return the smallest free space remaining
   int smallestFree(void)
   {
     int currentHeadAddress = 0;
-    int smallestFreeBlocks = MM_POOL_SIZE;
+    int fewestFreeBlocks = MM_POOL_SIZE;
 
-    while (currentHeadAddress < MM_POOL_SIZE / BLOCK_SIZE)
+    // Iterate through the list of chunks, ignoring used chunks
+    while (currentHeadAddress < (MM_POOL_SIZE / BLOCK_SIZE))
     {
       if (!isChunkUsed(currentHeadAddress))
       {
-        int chunkSize = getChunkDataSize(currentHeadAddress);
-        if (chunkSize < smallestFreeBlocks)
+        // Compare the number of usable data blocks with fewest so far
+        int dataBlocksInChunk = getNumDataBlocksInChunk(currentHeadAddress);
+        if (dataBlocksInChunk < fewestFreeBlocks)
         {
-          smallestFreeBlocks = chunkSize;
+          fewestFreeBlocks = dataBlocksInChunk;
         }
       }
 
+      // Advance to the next chunk
       currentHeadAddress = getLinkedAddress(currentHeadAddress) + 1;
     }
 
-    return smallestFreeBlocks * BLOCK_SIZE;
+    // Convert from blocks to bytes
+    return fewestFreeBlocks * BLOCK_SIZE;
   }
- }
+}
