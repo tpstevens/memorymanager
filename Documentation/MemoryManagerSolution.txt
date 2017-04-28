@@ -1,20 +1,57 @@
-I implemented the memory manager as a sequential list of memory chunks. At 
-the start and end of each chunk there is a two-byte head or tail. The first bit
-of the head/tail is 1 if the chunk is used and 0 if it is free. The other 15
-bits contain the  block address (where 1 block = 2 bytes) of the other 
-end-block (the tail contains the head address, and the head contains the tail 
-address) relative to the start of the MM_pool array. Memory is allocated based
-on first-fit, and chunks have no space in between them (save for the head/tail
-blocks).
+-------------------------------------------------------------------------------
+My MemoryManager Implementation
+-------------------------------------------------------------------------------
+I implemented the memory manager as a sequential list of memory chunks, each 
+with a two-byte head and tail. I divided the memory pool into blocks of two
+bytes each (2^15 blocks total), so each block's address can be represented with
+15 bits. A memory chunk's head contains the block address of the tail in 
+addition to a single leading bit that indicated if the chunk is free (0) or 
+used (1). A memory chunk's tail contains the block address of the head as well
+as the same single leading free/used bit as the head.
 
-I divided the array into blocks of two bytes because 2^15 blocks can be 
-addressed by 15 bits, leaving 1 bit free to store the free/used state of the
-corresponding memory chunk. The size of data that can be contained in the chunk
-can be found by taking the space between the block addresses and then 
-multiplying by the number of bytes in a block, and whether a chunk is used can
-be determined by using bitwise operations on the head or tail to extract the 
-first bit.
+In this way, the size of usable memory (in blocks) in a chunk can be determined
+from the head block address by extracting the tail block address from the head
+and then calculating the space between the two addresses. There is no space
+between consecutive chunks, so the block address of the next chunk's head can 
+be found by adding 1 to the block address of the current chunk's tail (the 
+previous chunk's tail's address can be similarly calculated from the current
+chunk's head's address).
 
+Allocations are handled on a first-fit basis: when an allocation is requested,
+the memory manager iterates through the list of chunks until it finds a chunk
+that is free and is large enough to handle the request (or calls outOfMemory()
+if it reaches the end of the memory pool). If a valid chunk was found, it is 
+either converted to a used chunk by setting the head and tail bits to 1 or 
+split into a used chunk and a free chunk if the available memory space can 
+accommodate the requested space as well as a new free chunk that fits the 
+minimum block size (which I set at 1 block). The address of the first data
+block in the chunk is then returned to the requestor.
+
+Deallocations happen in reverse: given a pointer, I assume that the head of the
+chunk is at the previous block. I verify that the pointer is valid by checking
+that the head block address is valid, that the head block contains a valid 
+block address, and that expected tail block contains the memory address of the 
+head. It is extremely unlikely that the block before the pointer would a) refer
+to a valid block and that b) the block that it points to also points back at 
+the block before the pointer, so I use this check to determine if the pointer
+refers to an allocated chunk. Once I've verified the pointer, I merge the newly
+freed block with any free neighbors by changing the addresses contained in the
+relevant heads/tails and setting their free/used bits accordingly.
+
+I was slightly past the end of the time limit by the time I finished 
+implementing my solution, so I didn't have time to verify my solution other 
+than checking for invalid deallocation attempts (including double deallocation 
+attempts) and allocation attempts that exceed the memory pool size. Given more 
+information about expected allocation patterns, I would have liked to test my 
+algorithm with different block sizes. Also, I think I could better handle the
+large range of allocation sizes by starting the search for small free spaces
+at the front of the list and large free spaces at the end of the list. Finally,
+I could implement a hash set of valid pointer locations using the start of the
+memory pool to enforce even stricter validation on deallocation requests.
+
+-------------------------------------------------------------------------------
+References
+-------------------------------------------------------------------------------
 When I was first thinking of the solution, I planned on using the first bytes
 in the array to store some sort of table that described the location of memory
 chunks. I don't think I had enough information to accurately determine the
@@ -27,9 +64,13 @@ I remembered that I had taken a computer architecture class where we discussed
 ways of allocating memory (e.g. first-fit vs. best-fit). I looked at the 
 Wikipedia article on dynamic memory allocation 
 (https://en.wikipedia.org/wiki/Memory_management#DYNAMIC) and from there 
-decided to research a buddy-block allocation system. Knuth's "The Art of 
-Computer Programming" discusses it in detail, but after skimming the section
-I realized that some of the data structures he used to track memory allocations
-would have to be stored in a separate data partition, which again is difficult
-here.
+decided to research a buddy-block allocation system. A section of Knuth's "The
+Art of Computer Programming" discusses it in detail, but after skimming the 
+section I realized that some of the data structures he used to track memory 
+allocations would have to be stored in a separate data partition, which again 
+is limited here. Knuth does discuss using a linked list to store information 
+about the chunks themselves, which I used to come up with my solution.
 
+After determining how I would handle invalid pointers during deallocation by
+checking the chunk's head and tail, I had a quick discussion with my professor
+to verify that my validation guarantee was strong enough.

@@ -19,7 +19,8 @@ control over memory optimizations. While assembly could give the same level of
 performance, it would be extremely difficult to design an entire engine
 architecture in assembly. It should be used for shorter, highly-focused
 operations where the compiler may not be able to produce the desired 
-optimization.
+optimization. Assembly language is also highly archictecture-dependent, while
+the C or C++ compiler handles translation into machine code for the developer.
 
 Though many enterprise projects rely on C (see NASA's coding guidelines), it
 doesn't natively provide the same abstraction tools as languages like C++.
@@ -32,7 +33,7 @@ modify them without forcing a rebuild. As mentioned with WoW, scripts can
 provide players with the tools they need to mod or customize their game 
 experience.  However, scripting languages may not provide much utility when
 designing the core game logic, as it is easier to optimize performance with the
-explicit control over memory and unmanaged execution of by C and C++.
+explicit control over memory and unmanaged execution of C and C++.
 
 
 -------------------------------------------------------------------------------
@@ -77,7 +78,8 @@ Manufacturers like Sony and Microsoft also provide platform-specific developer
 tools for creating and optimizing games as well as provide access to 
 multiplayer services and store APIs. This being said, because consoles are more
 likely to have limited performance than PCs, extra care must be taken to ensure
-a smooth playing experience.
+a smooth playing experience. Patches cannot be as quickly distributed as on PC,
+meaning that it can be harder to issue bugfixes or address player issues.
 
 PC game development is more difficult in the sense that the game may be played
 on machines with a wide range of CPU and GPU capabilities. Players
@@ -93,13 +95,13 @@ period of time?
 -------------------------------------------------------------------------------
 I try to work from the top down, first looking at high-level design and 
 technical documents to get a good understanding of the project's goals and 
-feature set. It's also helpful to get a quick verbal overview from someone 
+feature set. It's also helpful to get a quick verbal overview from someone
 who's familiar with the codebase so I can better identify core components.
 
 Once I'm pointed in the right direction, I like to break apart the codebase 
 conceptually into systems: initialization, player input, multiplayer services,
 core game loop, physics, rendering, AI behavior, etc. When I know ahead of time
-what parts of the project I'll  be working on, I try to focus more on those 
+what parts of the project I'll be working on, I try to focus more on those 
 systems and the systems they interact with. Looking at interfaces and APIs can
 be helpful in determining how individual systems work together.
 
@@ -129,7 +131,8 @@ perspectives can avoid unexpected problems down the road. Second, it's
 important to realize that even if I do think a particular solution is the best 
 one, it can be much more productive to go with someone else's opinion, 
 especially if they and others feel strongly about it. Being supportive of other
-team members in general leads to a much more collaborative environment.
+team members in general leads to a much more collaborative and positive
+environment.
 
 Style guides: while consistent formatting can make it easier to switch between
 areas of code, I think that collaboratively writing clean code requires more 
@@ -140,13 +143,13 @@ Because we don't have a strict style guide at my current workplace, I try to
 mimic the formatting and conventions of the current document if it was
 initially developed by someone else.
 
-Finally, open communication and code reviews: when I'm designing a large system
-or making a significant change, I like to run my solution by someone else after
+Open communication and code reviews: when I'm designing a large system or
+making a significant change, I like to run my solution by someone else after
 I've worked through it on paper. They don't need to be big discussions every 
 time, but it's generally a good idea to get a second opinion, especially if I'm
 a junior member on a project.
 
-Committing code without a code review should be punishable by death.
+Finally, committing without a code review should be punishable by death.
 
 
 -------------------------------------------------------------------------------
@@ -157,37 +160,38 @@ feel like I have a good understanding of its selling points and its flaws. My
 only real criticism of the game is its low drop rates for many useful items.
 
 One could argue that games like WoW, Counterstrike, and others that feature 
-randomly-assigned utility or cosmetic items rely on random item acquisition to
-keep players interested, much like gambling. It makes sense; they want to 
-reward players for paying their subscriptions or maintaining high skill levels.
-Making high-rarity items easily accessible to all would cheapen the experience 
-for players who worked for many months or years to earn them.
+randomly-awarded items rely on random item acquisition to keep players 
+interested, much like gambling. It makes sense; they want to reward players for
+paying their subscriptions or maintaining high skill levels. Making high-rarity
+items easily accessible to all would cheapen the experience for players who 
+worked for many months or years to earn them and would decrease the items' 
+apparent worth.
 
-However, Terraria is a single-player (or cooperative multiplayer) 
-game whose financial success doesn't rely on in-game transactions. I don't 
-think there's a good reason to artificially limit access to high-level items
-that all players will find useful. Players have four options for obtaining 
-items with low drop rates:
+However, Terraria is a single-player (or cooperative multiplayer) game whose
+financial success doesn't rely on in-game transactions. I don't think there's
+a good reason to artificially limit access to high-level items that all players
+will find useful. Players have four options for obtaining items with low drop 
+rates:
 
 - Farm until they happen to get their desired item, which may take a while and
   often involves enemies that aren't readily accessible (for example, some 
   appear only at night or during specific weather, and the rate at which they 
-  drop a rare item can be as low as 0.04%)
+  drop a rare item can be as low as 0.04%).
   
 - Build an in-game AFK farm to automatically spawn and kill monsters with lava 
-  or traps
+  or traps.
   
-- Give themselves the item by modifying their game save
+- Give themselves the item by modifying their game save.
 
-- Get lucky
+- Get lucky.
 
 I'm not at all opposed to randomization mechanics; however, I believe that 
 Terraria goes a little too far. Some possible solutions:
 
-- Increase the drop rate of an item over time (while the player doesn't have 
-  at least one already). The increase in rate could be tied to a player's
-  progression; the more bosses they kill, the more likely they'll be to receive
-  certain items from random drops.
+- Increase the drop rate of an item over time (while the player doesn't already
+  it). The increase in rate could be tied to a player's progression; the more 
+  bosses they kill, the more likely they'll be to receive rare items from 
+  random drops.
   
 - In addition to random drops, provide a mechanism for players to purchase 
   items. High-utility items should be expensive so their acquisition still 
