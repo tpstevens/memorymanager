@@ -8,87 +8,83 @@ Explain the conceptual distinctions between scripting languages, C++, C, and
 assembly and when it is appropriate and inappropriate to use each.
 -------------------------------------------------------------------------------
 While C/C++ and assembly are generally compiled before distribution, scripting
-languages may be compiled at runtime. 
-
-Precompiled languages can be much more performant than runtime-interpreted 
-languages; because they have already been compiled down to native code, they
-have less overhead than an interpreted language. Whether or not the language
-is managed by a runtime (like C# or Python) is also a performance 
-consideration.
+languages may be compiled at runtime. Precompiled languages can be much more 
+efficient than runtime-interpreted languages; because they have already been 
+compiled down to native code, they have less overhead than an interpreted 
+language. Whether or not the language is managed by a runtime (like C# or 
+Python) is also a performance consideration.
 
 C++ and C are well-suited to writing game engines, as they provide explicit 
 control over memory optimizations. While assembly could give the same level of
-performance, it would be extremely unwieldy to design an entire engine
-architecture. Assembly should be used for shorter, highly focused operations
-where the compiler may not be able to produce the desired optimization.
+performance, it would be extremely difficult to design an entire engine
+architecture in assembly. It should be used for shorter, highly-focused
+operations where the compiler may not be able to produce the desired 
+optimization.
 
 Though many enterprise projects rely on C (see NASA's coding guidelines), it
-doesn't provide the same native abstraction as languages like C++.
+doesn't natively provide the same abstraction tools as languages like C++.
 
 Scripting languages often hook into existing engine/gameplay code to provide
-easier access to designers or artists. Many games, such as Blizzard's World of
+easier access for designers or artists. Many games, such as Blizzard's World of
 Warcraft, expose in-game APIs through scripting languages like Lua. Because 
-they do not necessarily need to be precompiled, developers can write or modify
-scripts without forcing a recompilation. As mentioned with WoW, scripts can 
-provide  players with the tools needed to mod or customize their game 
-experience.  Scripting languages may not provide much utility when designing 
-the core game logic, as it is easier to optimize with languages like C++/C.
+scripts do not necessarily need to be precompiled, developers can write or 
+modify them without forcing a rebuild. As mentioned with WoW, scripts can 
+provide players with the tools they need to mod or customize their game 
+experience.  However, scripting languages may not provide much utility when
+designing the core game logic, as it is easier to optimize performance with the
+explicit control over memory and unmanaged execution of by C and C++.
 
 
 -------------------------------------------------------------------------------
 Describe the limitations of code reuse through inheritance in a large, diverse
 codebase.  Propose alternative solutions to these limitations.
 -------------------------------------------------------------------------------
-While inheritance can be a powerful tool, writing many classes that inherit
-from each other quickly gets convoluted, especially for developers who didn't 
-set up the original system. Since the parent and the child code are separated,
-it may not be clear what functionality the parent provides. Additionally,
-since child classes may sometimes implement behavior in a way that's much 
-different from their parents', code may have to be duplicated anyway when 
+While inheritance can be a powerful tool, a system with many classes that 
+inherit from each other may become convoluted, especially for developers who 
+didn't set up the original system. Since the parent and the child code are 
+separated, it may not be clear which parent(s)' functionality the child relies
+on. Additionally, since child classes may sometimes implement behavior much 
+differently than their parents, code may still have to be duplicated when
 overriding an inherited method. 
 
 Most of the problems that I've seen with inheritance stemmed from inheritance
-that was "too deep" -- classes had parents with parents and parents and so on.
-Being conscious of the hierarchy's current complexity can guide many decisions
-about when to use inheritance.
+that was "too deep" -- classes had parents with parents with parents and so on.
+Deep inheritance is not necessarily a bad thing, but developers should be 
+mindful of adding additional layers without good reason. There should always be
+a clear connection between child and parent.
 
 Another solution to providing flexible yet structured behavior is implementing
 some form of entity-component system. This allows developers to add custom 
-behavior to classes as desired without resorting to creating yet another 
-subclass, enabling a high degree of code reuse while still providing a 
-mechanism for customization (either create a new Component, or subclass an 
-existing one -- with good reason).
+behavior to classes without resorting to creating yet another subclass. 
+Entity-component systems enable a high degree of code reuse while still 
+providing a mechanism for customization.
 
 On a related note, developers sometimes utilize inheritance as a way of
-providing a contract between objects. Interfaces may be better suited here.
+providing a contract between objects; interfaces may be better suited here.
 
 
 -------------------------------------------------------------------------------
 Compare and contrast the biggest challenges of console game development versus
 PC game development.
 -------------------------------------------------------------------------------
-While I've never developed a console game, I expect that the differences boil
-down to the range of supported configurations, options, and architectures.
+While I've never developed a console game, I expect that the difference boils 
+down to the number of available player hardware configurations.
 
-Console game development, even if one plans on releasing for the major two or
-three consoles, is somewhat more of a known quantity. There is a limited number
-of systems to test and optimize, there are stricter requirements in place from
-manufacturers/distributers regarding performance and distribution, and all
-players on a given console are playing with the same features and graphical 
-options. Manufacturers like Sony and Microsoft also provide in-depth developer
-tools for creating and optimizing games, as well as access to multiplayer 
-services and store APIs. Control options are also more standardized, as the 
-majority of players will be using the controllers that come with their console.
-This being said, consoles are more likely to be limited in performance than
-PCs, so extra care must be taken to ensure a smooth playing experience.
+Console game development is somewhat more of a focused process than development 
+for PC. There is a limited number of systems to test and optimize, and
+manufacturers place stricter requirements on performance and distribution.
+Manufacturers like Sony and Microsoft also provide platform-specific developer 
+tools for creating and optimizing games as well as provide access to 
+multiplayer services and store APIs. This being said, because consoles are more
+likely to have limited performance than PCs, extra care must be taken to ensure
+a smooth playing experience.
 
 PC game development is more difficult in the sense that the game may be played
-on a variety of machines with a wide range of CPU and GPU capabilities. Players
-also have different expectations for customization, whether the quality of 
-graphical effects or input options (keyboard/mouse vs controller, for example).
-Testing many different configurations can be a challenge, so developers may
-need to rely more heavily on an alpha or beta period to catch performance or
-system configuration edge cases.
+on machines with a wide range of CPU and GPU capabilities. Players
+also have higher expectations for customization, such as creating custom
+graphics quality profiles. Testing many different configurations can be a 
+challenge, and developers may need to rely more heavily on an alpha or beta 
+period to catch performance or system configuration edge cases.
 
 
 -------------------------------------------------------------------------------
@@ -97,113 +93,113 @@ period of time?
 -------------------------------------------------------------------------------
 I try to work from the top down, first looking at high-level design and 
 technical documents to get a good understanding of the project's goals and 
-feature set. It's helpful to get a quick overview from someone who's familiar
-with the system so I can better identify core components.
+feature set. It's also helpful to get a quick verbal overview from someone 
+who's familiar with the codebase so I can better identify core components.
 
 Once I'm pointed in the right direction, I like to break apart the codebase 
 conceptually into systems: initialization, player input, multiplayer services,
 core game loop, physics, rendering, AI behavior, etc. When I know ahead of time
 what parts of the project I'll  be working on, I try to focus more on those 
 systems and the systems they interact with. Looking at interfaces and APIs can
-be helpful here.
+be helpful in determining how individual systems work together.
 
 As I go, I try to sketch out the program's flow, noting sections that I don't
-understand to either return to later or ask about. Explaining the system to 
-myself or to someone else is a big part of the learning process for me.
+understand to either return to later or ask about. Trying to explain the system
+to myself or to someone else is also a big part of my learning process.
 
 
 -------------------------------------------------------------------------------
 Talk about a few Best Practices you use when programming in a team environment.
 -------------------------------------------------------------------------------
-It's hard to rank these in terms of importance, because having been a part of
-(and having led) projects where we didn't do these things, I think they're all
-crucial to problem-free development:
-
 Version control management: everyone uses some form of version control, but 
 it's important that everyone on the team more or less follows the same rules.
 For example, branching from the master repository is a great way to implement
-far-reaching changes, but it's very important not to merge those changes 
-without talking to people who will be affected first. Even if you've already 
-discussed the scope of the changes with everyone ahead of time, it's good to
-give a heads up when you're ready to merge what you've done. Writing detailed
-commit messages is a must.
+far-reaching changes, but it's very important to talk to people who will be 
+affected by the changes before merging them. Even if you've already discussed 
+the scope of the changes with everyone ahead of time, it's good to give a heads
+up when you're ready to merge what you've done. Writing detailed commit 
+messages is a must.
 
-Being flexible and really listening to alternatives: I've been the team leader 
-on  most of my school projects, so I would often be responsible for designing 
+Being flexible and really listening to alternatives: because I've been the team
+leader on most of my school projects, I was often responsible for designing 
 whatever program we'd be writing. I've noticed two things: first, when I wasn't 
 receptive to other people's ideas, it soured the team experience. Nobody wants
-to feel like their ideas aren't even considered, and getting a variety of 
-perspectives can avoid problems down the road. Nobody designs something perfect
-by themselves the first time. At the same time, it's important to realize that
-even if I do think a particular solution is the best one, it can be much
-more productive to go with what someone else has decided. Being supportive of 
-other team members in general leads to a much happier environment.
+to feel like their ideas aren't being considered, and getting a variety of 
+perspectives can avoid unexpected problems down the road. Second, it's 
+important to realize that even if I do think a particular solution is the best 
+one, it can be much more productive to go with someone else's opinion, 
+especially if they and others feel strongly about it. Being supportive of other
+team members in general leads to a much more collaborative environment.
 
 Style guides: while consistent formatting can make it easier to switch between
-areas of code, I think that a team's collective style goes beyond that. 
-Consistency in frequency and type of comments, which log levels get used for 
-which kinds of messages, and function/member naming can be really helpful
-and don't require getting into the tabs/spaces war. At my current workplace, we
-don't have a strict style guide, so I try to mimic the formatting and 
-conventions of the current document if it was initially developed by someone 
-else.
+areas of code, I think that collaboratively writing clean code requires more 
+than this. Ensuring consistency in comment frequency/type, deciding which log 
+levels are used for which kinds of messages, and maintaining function/member 
+naming conventions are very helpful without devolving into the tabs/spaces war.
+Because we don't have a strict style guide at my current workplace, I try to 
+mimic the formatting and conventions of the current document if it was
+initially developed by someone else.
 
 Finally, open communication and code reviews: when I'm designing a large system
 or making a significant change, I like to run my solution by someone else after
-I've worked through it on paper, especially when time allows. I don't think 
-they need to be big discussions every time, but it's generally a good idea to
-get a second opinion, especially as a junior member on a project. Code reviews,
-on the other hand, should practically be law.
+I've worked through it on paper. They don't need to be big discussions every 
+time, but it's generally a good idea to get a second opinion, especially if I'm
+a junior member on a project.
+
+Committing code without a code review should be punishable by death.
 
 
 -------------------------------------------------------------------------------
 Discuss an instance of a bad game design decision in an otherwise good game.
 -------------------------------------------------------------------------------
-According to Steam, I've played twice as much Terraria as anything else, so I 
+According to Steam, I've played twice as much Terraria as anything else, and I 
 feel like I have a good understanding of its selling points and its flaws. My
-only real criticism of the game is its reliably low drop rates for many useful 
-items. One could argue that games like WoW, Counterstrike, and other games
-that feature randomly-assigned utility or cosmetic items rely on rare drops to
-keep players interested, much like gambling. It makes sense: they want to 
-reward players for paying their subscription or maintaining a high skill level.
-Making those items easily accessible to all would cheapen the experience for 
-those who worked for a long time to earn them.
+only real criticism of the game is its low drop rates for many useful items.
 
-However, Terraria is much more a single-player (or cooperative multiplayer) 
+One could argue that games like WoW, Counterstrike, and others that feature 
+randomly-assigned utility or cosmetic items rely on random item acquisition to
+keep players interested, much like gambling. It makes sense; they want to 
+reward players for paying their subscriptions or maintaining high skill levels.
+Making high-rarity items easily accessible to all would cheapen the experience 
+for players who worked for many months or years to earn them.
+
+However, Terraria is a single-player (or cooperative multiplayer) 
 game whose financial success doesn't rely on in-game transactions. I don't 
-think there's as good a reason to artificially limit access to items that 
-players will eventually farm trash mobs for. Players have four options:
+think there's a good reason to artificially limit access to high-level items
+that all players will find useful. Players have four options for obtaining 
+items with low drop rates:
 
 - Farm until they happen to get their desired item, which may take a while and
-  often involves enemies that aren't constantly accessible (some occur only
-  at night or during specific weather, for example)
+  often involves enemies that aren't readily accessible (for example, some 
+  appear only at night or during specific weather, and the rate at which they 
+  drop a rare item can be as low as 0.04%)
   
-- Build an in-game system of spawning monsters and automatically killing them
-  through lava or traps; essentially, AFK farming
+- Build an in-game AFK farm to automatically spawn and kill monsters with lava 
+  or traps
   
-- Cheat the item in through a save file editor
+- Give themselves the item by modifying their game save
 
 - Get lucky
 
-I'm not opposed to random chance in games at all; however, I believe that 
+I'm not at all opposed to randomization mechanics; however, I believe that 
 Terraria goes a little too far. Some possible solutions:
 
-- Increase the drop rate of an item over time. The increase in rate could be 
-  tied to a player's progression, so as they kill more bosses and progress
-  farther, they're more likely to receive certain items from kiling enemies.
+- Increase the drop rate of an item over time (while the player doesn't have 
+  at least one already). The increase in rate could be tied to a player's
+  progression; the more bosses they kill, the more likely they'll be to receive
+  certain items from random drops.
   
-- Provide a mechanism for players to purchase items. They should still be 
-  expensive (so players are somewhat limited in their progression and don't 
-  feel like their earier items are quickly overshadowed by late-game ones), but
-  this gives the player more freedom as to how their play progresses.
+- In addition to random drops, provide a mechanism for players to purchase 
+  items. High-utility items should be expensive so their acquisition still 
+  feels satisfying. At the same time, the player will be able to reliably 
+  expect when they'll obtain an item instead of feeling like they've been 
+  waiting indefinitely.
   
 - During character creation, allow the player to optionally choose one or two 
-  low-level accessories from a preselected list for their character. Early-game
-  access to items can drastically change how the first part of the game plays
-  out, but I don't think that everyone has the time to wait for their desired
-  combination. If the developers intended to force the player to be flexible 
-  with their playthroughs by not allowing them to rely on a certain item 
-  progression, only unlock the character customization options once the player
-  has achieved some milestone(s) in a previous playthrough. Granted, this is
-  just as susceptible for save modification, but I believe that giving the 
-  player for agency (for little consequence) is almost always a good decision.
+  low-level accessories from a preselected list, because early-game access to 
+  items can drastically change how the first part of the game plays out. To 
+  maintain some level of randomness that the player must overcome, players 
+  should only be able to use the character customization options once they have
+  achieved some milestone(s) in a previous playthrough. While this is just as
+  susceptible to savegame modification, I believe that giving the player more
+  freedom is almost always a good decision.

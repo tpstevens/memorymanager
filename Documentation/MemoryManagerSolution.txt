@@ -1,0 +1,35 @@
+I implemented the memory manager as a sequential list of memory chunks. At 
+the start and end of each chunk there is a two-byte head or tail. The first bit
+of the head/tail is 1 if the chunk is used and 0 if it is free. The other 15
+bits contain the  block address (where 1 block = 2 bytes) of the other 
+end-block (the tail contains the head address, and the head contains the tail 
+address) relative to the start of the MM_pool array. Memory is allocated based
+on first-fit, and chunks have no space in between them (save for the head/tail
+blocks).
+
+I divided the array into blocks of two bytes because 2^15 blocks can be 
+addressed by 15 bits, leaving 1 bit free to store the free/used state of the
+corresponding memory chunk. The size of data that can be contained in the chunk
+can be found by taking the space between the block addresses and then 
+multiplying by the number of bytes in a block, and whether a chunk is used can
+be determined by using bitwise operations on the head or tail to extract the 
+first bit.
+
+When I was first thinking of the solution, I planned on using the first bytes
+in the array to store some sort of table that described the location of memory
+chunks. I don't think I had enough information to accurately determine the
+number of allocations, so the table would have to resize dynamically (and thus
+memory would have to be allocated starting from the other side of the array).
+I suspected that it would be time-intensive for me to design an efficient 
+solution this way.
+
+I remembered that I had taken a computer architecture class where we discussed
+ways of allocating memory (e.g. first-fit vs. best-fit). I looked at the 
+Wikipedia article on dynamic memory allocation 
+(https://en.wikipedia.org/wiki/Memory_management#DYNAMIC) and from there 
+decided to research a buddy-block allocation system. Knuth's "The Art of 
+Computer Programming" discusses it in detail, but after skimming the section
+I realized that some of the data structures he used to track memory allocations
+would have to be stored in a separate data partition, which again is difficult
+here.
+
