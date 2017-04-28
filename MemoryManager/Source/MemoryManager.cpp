@@ -40,7 +40,7 @@ namespace MemoryManager
   }
 
   // Get the address stored in the head or tail block
-  unsigned int getLinkedAddress(int blockAddress)
+  int getLinkedAddress(int blockAddress)
   {
     // Get the index of the first byte of the block
     unsigned int firstByteIndex = blockAddressToPoolIndex(blockAddress);
@@ -153,7 +153,6 @@ namespace MemoryManager
   {
     int dataBlocksInChunk;
     int currentHeadAddress = 0;
-    int currentTailAddress = 0;
     int numBlocksRequested;
 
     // Validate argument

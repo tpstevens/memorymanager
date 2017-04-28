@@ -1,5 +1,5 @@
 -------------------------------------------------------------------------------
-My MemoryManager Implementation
+My MemoryManager Implementation (tested with Visual Studio Enterprise 2015)
 -------------------------------------------------------------------------------
 I implemented the memory manager as a sequential list of memory chunks, each 
 with a two-byte head and tail. I divided the memory pool into blocks of two
@@ -16,6 +16,9 @@ between consecutive chunks, so the block address of the next chunk's head can
 be found by adding 1 to the block address of the current chunk's tail (the 
 previous chunk's tail's address can be similarly calculated from the current
 chunk's head's address).
+
+During the initialization stage, the memory pool is established as one big free
+chunk with a head and tail block.
 
 Allocations are handled on a first-fit basis: when an allocation is requested,
 the memory manager iterates through the list of chunks until it finds a chunk
